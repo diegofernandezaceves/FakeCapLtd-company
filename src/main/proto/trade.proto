@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.fakecap";
+option java_outer_classname = "TradeGrpcProto";
+
+package trade;
+
+service TradeOperation {
+  rpc submit(ShareRequest) returns (ShareResponse);
+}
+
+message ShareRequest {
+  string user_id = 1;
+  string ticker = 2;
+  uint32 investment_amount = 3;
+}
+
+enum OrderStatus {
+  SUCCESS = 0;
+  FAILURE = 1;
+}
+
+message ShareResponse {
+  string order_id = 1;
+  OrderStatus status = 2;
+  string error_message = 3;
+}
