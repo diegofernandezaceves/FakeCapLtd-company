@@ -10,9 +10,13 @@ import java.util.List;
 @ApplicationScoped
 public class OrderRepository implements PanacheRepository<Order> {
 
+    public List<Order> findUnpublishOrders() {
+        return list("published is not true");
+    }
+
     @Transactional
-    public void deleteByIds(List<String> ids) {
-        delete("id in ?1", ids);
+    public void markAsPublished(List<String> ids) {
+        update("published = true where id in ?1", ids);
     }
 
 }

@@ -33,11 +33,11 @@ public class OrderProcessorService {
     public void processOrder() {
         List<OrderDto> orders = getAllAndBuildOrders();
         List<CompletableFuture<OrderDto>> futuresOrderSent = this.publishOrders(orders);
-        this.deleteOrderPublished(futuresOrderSent);
+        this.updateOrdersAsPublished(futuresOrderSent);
     }
 
     private List<OrderDto> getAllAndBuildOrders() {
-        List<OrderDto> orders = this.orderRepository.listAll().stream()
+        List<OrderDto> orders = this.orderRepository.findUnpublishOrders().stream()
                 .map(order -> {
                     boolean isSuccess = faker.bool().bool();
                     return new OrderDto(order.getId(), order.getAmount(), isSuccess);
@@ -47,13 +47,13 @@ public class OrderProcessorService {
         return orders;
     }
 
-    private void deleteOrderPublished(List<CompletableFuture<OrderDto>> futuresOrderSent) {
+    private void updateOrdersAsPublished(List<CompletableFuture<OrderDto>> futuresOrderSent) {
         this.joinAllFutures(futuresOrderSent)
                 .thenAccept(successfulOrders -> {
                     if (!successfulOrders.isEmpty()) {
                         List<String> orderIds = successfulOrders.stream().map(OrderDto::orderId).toList();
-                        orderRepository.deleteByIds(orderIds);
-                        log.debug("✅ Deleted {} successfully published orders: {}", orderIds.size(), successfulOrders);
+                        orderRepository.markAsPublished(orderIds);
+                        log.info("✅ Orders {} successfully published: {}", orderIds.size(), successfulOrders);
                     }
                 })
                 .exceptionally(throwable -> {

@@ -27,5 +27,6 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
     private String errorMessage;
+    private Boolean published;
 
 }

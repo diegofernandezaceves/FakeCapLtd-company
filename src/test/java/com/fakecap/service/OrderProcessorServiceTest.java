@@ -1,6 +1,5 @@
 package com.fakecap.service;
 
-import com.fakecap.ShareRequest;
 import com.fakecap.dto.OrderDto;
 import com.fakecap.messaging.OrderPublisher;
 import com.fakecap.model.Company;
@@ -38,8 +37,8 @@ class OrderProcessorServiceTest {
     OrderRepository orderRepository;
 
     @Test
-    @DisplayName("Retrieve, publish and delete order")
-    void givenExistingOrdersWhenItHasNotBeenSentYetThenShouldPublishAndDeleteOrders() {
+    @DisplayName("Retrieve, publish and mark as published order")
+    void givenExistingOrdersWhenItHasNotBeenSentYetThenShouldPublishAndMarkAsPublishedOrders() {
 
         Order order = this.createOrder();
         List<Order> orders = List.of(order);
@@ -47,48 +46,48 @@ class OrderProcessorServiceTest {
         OrderDto sentOrder = this.createOrderDto(order);
         List<String> sentOrderIds = List.of(sentOrder.orderId());
 
-        when(orderRepository.listAll()).thenReturn(orders);
+        when(orderRepository.findUnpublishOrders()).thenReturn(orders);
         when(orderPublisher.publish(any(OrderDto.class))).thenReturn(CompletableFuture.completedFuture(sentOrder));
-        doNothing().when(orderRepository).deleteByIds(sentOrderIds);
+        doNothing().when(orderRepository).markAsPublished(sentOrderIds);
 
         this.orderProcessorService.processOrder();
 
         verify(orderPublisher, atLeastOnce()).publish(any(OrderDto.class));
-        verify(orderRepository, atLeastOnce()).deleteByIds(sentOrderIds);
+        verify(orderRepository, atLeastOnce()).markAsPublished(sentOrderIds);
     }
 
     @Test
-    @DisplayName("No order to publish and delete")
-    void givenNoOrdersThenShouldNotPublishAndNotDeleteOrders() {
+    @DisplayName("No order to publish and mark as published")
+    void givenNoOrdersThenShouldNotPublishAndNotMarkAsPublishedOrders() {
 
-        when(orderRepository.listAll()).thenReturn(Collections.emptyList());
+        when(orderRepository.findUnpublishOrders()).thenReturn(Collections.emptyList());
 
         this.orderProcessorService.processOrder();
 
         verify(orderPublisher, never()).publish(any(OrderDto.class));
-        verify(orderRepository, never()).deleteByIds(any());
+        verify(orderRepository, never()).markAsPublished(any());
     }
 
     @Test
-    @DisplayName("The order is not deleted when publishing fails")
-    void givenExistingOrdersWhenPublishFailsThenShouldNotDeleteOrderAndHandlePublishErrorGracefully() {
+    @DisplayName("The order is not marked when publishing fails")
+    void givenExistingOrdersWhenPublishFailsThenShouldNotMarkOrderAndHandlePublishErrorGracefully() {
 
         Order order = this.createOrder();
         List<Order> orders = List.of(order);
 
-        when(orderRepository.listAll()).thenReturn(orders);
+        when(orderRepository.findUnpublishOrders()).thenReturn(orders);
         when(orderPublisher.publish(any(OrderDto.class)))
                 .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
 
         this.orderProcessorService.processOrder();
 
         verify(orderPublisher, atLeastOnce()).publish(any(OrderDto.class));
-        verify(orderRepository, never()).deleteByIds(any());
+        verify(orderRepository, never()).markAsPublished(any());
     }
 
     @Test
-    @DisplayName("The error is handled gracefully when delete operation fails")
-    void givenExistingOrdersWhenDeleteOperationFailsThenShouldHandleErrorGracefully() {
+    @DisplayName("The error is handled gracefully when markAsPublished operation fails")
+    void givenExistingOrdersWhenMarkAsPublishedOperationFailsThenShouldHandleErrorGracefully() {
 
         Order order = this.createOrder();
         List<Order> orders = List.of(order);
@@ -96,14 +95,14 @@ class OrderProcessorServiceTest {
         OrderDto sentOrder = this.createOrderDto(order);
         List<String> sentOrderIds = List.of(sentOrder.orderId());
 
-        when(orderRepository.listAll()).thenReturn(orders);
+        when(orderRepository.findUnpublishOrders()).thenReturn(orders);
         when(orderPublisher.publish(any(OrderDto.class))).thenReturn(CompletableFuture.completedFuture(sentOrder));
-        doThrow(RuntimeException.class).when(orderRepository).deleteByIds(sentOrderIds);
+        doThrow(RuntimeException.class).when(orderRepository).markAsPublished(sentOrderIds);
 
         this.orderProcessorService.processOrder();
 
         verify(orderPublisher, atLeastOnce()).publish(any(OrderDto.class));
-        verify(orderRepository, atLeastOnce()).deleteByIds(sentOrderIds);
+        verify(orderRepository, atLeastOnce()).markAsPublished(sentOrderIds);
     }
 
     private Order createOrder() {
@@ -112,7 +111,7 @@ class OrderProcessorServiceTest {
         Long userId = faker.number().randomNumber();
         BigDecimal amount = new BigDecimal(faker.number().positive());
 
-        return new Order(orderId, userId, new Company(), amount, SUCCESS, null);
+        return new Order(orderId, userId, new Company(), amount, SUCCESS, null, null);
     }
 
     private OrderDto createOrderDto(Order order) {
