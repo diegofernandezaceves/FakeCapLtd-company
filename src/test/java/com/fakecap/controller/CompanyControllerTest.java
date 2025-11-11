@@ -2,6 +2,7 @@ package com.fakecap.controller;
 
 import com.fakecap.dto.CompanyDto;
 import com.fakecap.repository.CompanyRepository;
+import com.fakecap.repository.OrderRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
@@ -27,9 +28,13 @@ public class CompanyControllerTest {
     @Inject
     CompanyRepository companyRepository;
 
+    @Inject
+    OrderRepository orderRepository;
+
     @BeforeEach
     @Transactional
     public void setUp() {
+        orderRepository.deleteAll();
         companyRepository.deleteAll();
     }
 

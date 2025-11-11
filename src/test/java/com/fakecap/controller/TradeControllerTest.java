@@ -6,6 +6,7 @@ import com.fakecap.ShareResponse;
 import com.fakecap.TradeOperation;
 import com.fakecap.dto.CompanyDto;
 import com.fakecap.repository.CompanyRepository;
+import com.fakecap.repository.OrderRepository;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -29,12 +30,16 @@ public class TradeControllerTest {
     @Inject
     CompanyRepository companyRepository;
 
+    @Inject
+    OrderRepository orderRepository;
+
     @GrpcClient
     TradeOperation tradeOperation;
 
     @BeforeEach
     @Transactional
     public void setUp() {
+        orderRepository.deleteAll();
         companyRepository.deleteAll();
     }
 
